@@ -5,7 +5,7 @@ import traceback
 from config import Config
 
 from  utils.logger import get_logger
-
+from utils.helper import copy_sheet, refresh_excel_file
 logger = get_logger()
 
 config = Config()
@@ -29,13 +29,6 @@ def copy_template():
         print(error_details)
         return {"status": 500, "message": error_details}
 
-def copy_sheet(source_wb, dest_wb, source_sheet_name, dest_sheet_name):
-    source_sheet = source_wb[source_sheet_name]
-    dest_sheet = dest_wb.create_sheet(dest_sheet_name)
-    for row in source_sheet.iter_rows():
-        for cell in row:
-            dest_sheet[cell.coordinate].value = cell.value
-
 
 
 def copy_input():
@@ -44,24 +37,28 @@ def copy_input():
     input_fld = Config.INPUT_FOLDER
     input_files = os.listdir(input_fld)[0]
     input_path = os.path.join(input_fld,input_files )
-    source_wb = openpyxl.load_workbook(input_path)
-    input_sheet_name = "input"
-
+    wb_obj_input = openpyxl.load_workbook(input_path)
+    source_sheet_name = config.INPUT_SHEET_NAME
+    
+    
     template_dir = config.TEMPLATE_FOLDER
     artifact_fld = os.path.join(config.ARTIFACTS_FOLDER, "tmp")
     template_file_name = os.listdir(artifact_fld)[0]
-    template_file_path = os.path.join(template_dir, 'tmp' ,template_file_name )
-    destination_wb = openpyxl.load_workbook(template_file_path)
+    template_file_path = os.path.join(artifact_fld, template_file_name )   
+    wb_obj_template = openpyxl.load_workbook(template_file_path)
+    dest_sheet_name = config.TEMPLATE_INPUT_SHEET_NAME
+    # copy input 
+    copy_sheet(wb_obj_input,wb_obj_template, source_sheet_name, dest_sheet_name )
 
-    copy_sheet(source_wb, destination_wb, Config.TEMPLATE_INPUT_SHEET_NAME, input_sheet_name)
+    result_file_path = os.path.join(config.OUTPUT_FOLDER, config.RESULT_FILE_NAME)
 
-    destination_file_name = ""
-    destination_wb.save(destination_file_name)
-    # refresh excel 
+    wb_obj_template.save(filename=result_file_path)
+    final_file_path = os.path.join(os.getcwd(), result_file_path)
 
+    refresh_excel_file(final_file_path)
 
-
+    
 if __name__ == "__main__":
-    copy_template()
+    copy_input()
 
 
